@@ -20,9 +20,10 @@ public class ChatServerProcessThread extends Thread {
 	@Override
 	public void run() {
 		InetSocketAddress remoteAddress = (InetSocketAddress)socket.getRemoteSocketAddress();
-		String remoteHostAddress = remoteAddress.getHostName();
-		int remoteHostPort = remoteAddress.getPort();
-		System.out.println( "[server] 연결됨  from " + remoteHostAddress + ":" + remoteHostPort );
+		String ip = remoteAddress.getAddress().toString();
+		int port = remoteAddress.getPort();
+		setName("noname");
+		consoleLog( getName() + " joined from " + ip + ":" + port );
 		broadcast(socket, brothers);
 	}
 	
@@ -35,17 +36,20 @@ public class ChatServerProcessThread extends Thread {
 			while( true ) {
 				data = br.readLine();
 				if( data == null ) {
-					System.out.println( "[server] closed by client");
+					consoleLog(getName() + " leaved.");
 					break;
 				}
-				System.out.println( "[server]" + this.getId() + "thread "  + socket.getInetAddress()+ "번: " + data );
-				//pw.println( "당신: "+ data );
+				System.out.println( "[server] " + this.getName() + ": " + data );
 				for(ChatServerProcessThread thread : brothers){
-					thread.say("[brodcast from server]"+data);
+					thread.say("[broadcast from server]"+thread.getName() + ": " + data);
 				}
 			}
 		} catch( SocketException ex ) {
-			System.out.println( "[server] 비정상적으로 클라이언트가 종료 되었습니다." );
+			consoleLog("비정상적으로 클라이언트가 종료 되었습니다." );
+			//잘 안됨
+			for(ChatServerProcessThread thread : brothers){
+				thread.say("[broadcast from server]"+thread.getName() + " leaved");
+			}
 		} catch( IOException ex ) {
 			ex.printStackTrace();
 		} finally {
@@ -62,4 +66,9 @@ public class ChatServerProcessThread extends Thread {
 	public void say(String data){
 		pw.println(data);
 	}
+	
+	public static void consoleLog(String str){
+		System.out.println("[server] " + str);
+	}
+	
 }

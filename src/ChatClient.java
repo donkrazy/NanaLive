@@ -7,7 +7,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Scanner;
 
-public class EchoClient {
+public class ChatClient {
 	private static final String SERVER_IP = "192.168.1.188";
 	private static final int SERVER_PORT = 8080;
 	public static void main(String[] args) {
@@ -18,19 +18,14 @@ public class EchoClient {
 			socket.connect( new InetSocketAddress( SERVER_IP, SERVER_PORT ) );
 			BufferedReader br = new BufferedReader( new InputStreamReader( socket.getInputStream(), "UTF-8" ) );
 			PrintWriter pw = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), "UTF-8" ), true );
-
 			while( true ) {
-				System.out.print( ">> " );
 				String message = scanner.nextLine();
+				Thread thread = new ChatClientProcessThread(br);
+				thread.start();
 				if( "exit".equals( message ) ) {
 					break;
 				}
-				
 				pw.println( message );
-				String data = null;
-				if( ( data = br.readLine()) != null ) {
-					System.out.println( "<< " + data );
-				}
 			}
 		} catch(IOException ex) {
 			ex.printStackTrace();
