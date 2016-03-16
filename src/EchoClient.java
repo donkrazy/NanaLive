@@ -16,12 +16,8 @@ public class EchoClient {
 		try {
 			socket = new Socket();
 			socket.connect( new InetSocketAddress( SERVER_IP, SERVER_PORT ) );
-			
 			BufferedReader br = new BufferedReader( new InputStreamReader( socket.getInputStream(), "UTF-8" ) );
 			PrintWriter pw = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), "UTF-8" ), true );
-
-			//데이터 읽기에 타임아웃 설정
-			socket.setSoTimeout( 1 );
 
 			while( true ) {
 				System.out.print( ">> " );
@@ -31,8 +27,6 @@ public class EchoClient {
 				}
 				
 				pw.println( message );
-				//socket.getOutputStream().write( (message + "\n").getBytes() );
-
 				String data = null;
 				if( ( data = br.readLine()) != null ) {
 					System.out.println( "<< " + data );
