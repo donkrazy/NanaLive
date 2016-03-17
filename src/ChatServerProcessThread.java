@@ -6,13 +6,13 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class ChatServerProcessThread extends Thread {
 	private Socket socket;
-	public ArrayList<ChatServerProcessThread> brothers;
+	public LinkedList<ChatServerProcessThread> brothers;
 	private PrintWriter pw;
-	public ChatServerProcessThread( Socket socket, ArrayList<ChatServerProcessThread> brothers) {
+	public ChatServerProcessThread( Socket socket, LinkedList<ChatServerProcessThread> brothers) {
 		this.socket = socket;
 		this.brothers = brothers;
 	}
@@ -22,33 +22,38 @@ public class ChatServerProcessThread extends Thread {
 		InetSocketAddress remoteAddress = (InetSocketAddress)socket.getRemoteSocketAddress();
 		String ip = remoteAddress.getAddress().toString();
 		int port = remoteAddress.getPort();
-		setName("noname");
-		consoleLog( getName() + " joined from " + ip + ":" + port );
-		broadcast(socket, brothers);
-	}
-	
-
-	public void broadcast(Socket socket, ArrayList<ChatServerProcessThread> brothers){
+		consoleLog(  ip + ":" + port + " joined.");
 		try {
 			BufferedReader br = new BufferedReader( new InputStreamReader( socket.getInputStream(), "UTF-8" ) );
 			pw = new PrintWriter( new OutputStreamWriter( socket.getOutputStream(), "UTF-8" ), true );
 			String data = null;
+			setName(br.readLine());
+			consoleLog(ip + " set nickname as " + getName());
+			broadcast( " just joined.");
 			while( true ) {
 				data = br.readLine();
 				if( data == null ) {
 					consoleLog(getName() + " leaved.");
+					System.out.println(data);
 					break;
 				}
-				System.out.println( "[server] " + this.getName() + ": " + data );
-				for(ChatServerProcessThread thread : brothers){
-					thread.say("[broadcast from server]"+thread.getName() + ": " + data);
+				if( data.equals("exit")){
+					consoleLog(getName() + " leaved.");
+					brothers.remove(this);
+					break;
+				}
+				consoleLog( this.getName() + ": " + data );
+				// data 전파
+				synchronized (brothers) {
+					for(ChatServerProcessThread thread : brothers){
+						thread.broadcast(": " + data);
+					}
 				}
 			}
 		} catch( SocketException ex ) {
-			consoleLog("비정상적으로 클라이언트가 종료 되었습니다." );
-			//잘 안됨
+			consoleLog(getName()+": 비정상적으로 클라이언트가 종료 되었습니다." );
 			for(ChatServerProcessThread thread : brothers){
-				thread.say("[broadcast from server]"+thread.getName() + " leaved");
+				thread.broadcast( thread.getName() + " leaved" );
 			}
 		} catch( IOException ex ) {
 			ex.printStackTrace();
@@ -63,8 +68,13 @@ public class ChatServerProcessThread extends Thread {
 		}
 	}
 	
-	public void say(String data){
-		pw.println(data);
+
+	public void broadcast(String data){
+		synchronized (brothers) {
+			for(ChatServerProcessThread thread : brothers){
+				thread.pw.println(getName() + data);
+			}
+		}
 	}
 	
 	public static void consoleLog(String str){
